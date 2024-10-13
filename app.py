@@ -31,17 +31,27 @@ def upload_file():
     if 'file' not in request.files:
         return 'No file part'
 
-    file = request.files['file']
-    if file.filename == '':
-        return 'No selected file'
+    files = request.files.getlist('file')  # Получаем список файлов
+    if not files:
+        return 'No selected files'
 
-    if file:
+    annotated_files = []
+
+    for file in files:
+        if file.filename == '':
+            continue
+
+        # Сохраняем каждый файл
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(image_path)
 
+        # Выполняем детекцию объектов
         annotated_image_path = detect_objects(image_path)
+        annotated_files.append(os.path.basename(annotated_image_path))
 
-        return redirect(url_for('result', filename=os.path.basename(annotated_image_path)))
+    # Передаем список аннотированных файлов в шаблон result.html
+    return render_template('result.html', filenames=annotated_files)
+
 
 
 @app.route('/result/<filename>')
